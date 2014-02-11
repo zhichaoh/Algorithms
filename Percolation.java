@@ -1,18 +1,26 @@
 public class Percolation {
   private int sizeOfRowCol;
-  private WeightedQuickUnionUF wqu;
-  private boolean[] status;
+  private WeightedQuickUnionUF pqu;
+  private byte[] status;
+  private static final int CLOSE = 0;
+  private static final int OPEN = 1;
+  private static final int CONNECTED_TO_BOTTOM = 2;
 
   public Percolation(int N) {
     sizeOfRowCol = N;
     int numOfCells = N*N;
-    wqu = new WeightedQuickUnionUF(numOfCells + 2);
-    status = new boolean[numOfCells+2];
+    pqu = new WeightedQuickUnionUF(numOfCells + 1);
+    status = new byte[numOfCells+1];
     for (int i = 0; i < numOfCells; ++i) {
-      status[i] = false;
+      status[i] = CLOSE;
     }
-    status[N*N] = true;
-    status[N*N+1] = true;
+    // bottom row is connected by default
+    for (int i = 1; i <= N; ++i) {
+      status[getCellIndex(N, i)] = CONNECTED_TO_BOTTOM;
+    }
+    
+    // virtual site is OPEN
+    status[N*N] = OPEN;
   }
 
   private void validateCellIndex(int i, int j) {
@@ -28,11 +36,11 @@ public class Percolation {
     if (i != 1) {
       int cellAbove = getCellIndex(i-1, j);
       if (isOpen(i-1, j)) {
-        wqu.union(cellAbove, getCellIndex(i, j));
+        union(cellAbove, getCellIndex(i, j));
       }
     }
     else {
-      wqu.union(getCellIndex(i, j), sizeOfRowCol * sizeOfRowCol);
+      union(getCellIndex(i, j), sizeOfRowCol * sizeOfRowCol);
     }
   }
 
@@ -40,12 +48,7 @@ public class Percolation {
     if (i != sizeOfRowCol) {
       int cellBelow = getCellIndex(i+1, j);
       if (isOpen(i+1, j)) {
-        wqu.union(cellBelow, getCellIndex(i, j));
-      }
-    }
-    else {
-      if (! isFull(i, j)) {
-        wqu.union(getCellIndex(i, j), (sizeOfRowCol * sizeOfRowCol)+1);
+        union(cellBelow, getCellIndex(i, j));
       }
     }
   }
@@ -54,7 +57,7 @@ public class Percolation {
     if (j != 1) {
       int cellLeft = getCellIndex(i, j-1);
       if (isOpen(i, j-1)) {
-        wqu.union(cellLeft, getCellIndex(i, j));
+        union(cellLeft, getCellIndex(i, j));
       }
     }
     else {
@@ -66,18 +69,30 @@ public class Percolation {
     if (j != sizeOfRowCol) {
       int cellRight = getCellIndex(i,  j+1);
       if (isOpen(i, j+1)) {
-        wqu.union(cellRight, getCellIndex(i, j));
+        union(cellRight, getCellIndex(i, j));
       }
     }
     else {
       // nothing to connect here
     }
   }
+  
+  private void union(int cell1, int cell2) {
+    int cell1Root = pqu.find(cell1);
+    int cell2Root = pqu.find(cell2);
+
+    if (((status[cell1Root] & CONNECTED_TO_BOTTOM) == CONNECTED_TO_BOTTOM)
+        || ((status[cell2Root] & CONNECTED_TO_BOTTOM) == CONNECTED_TO_BOTTOM)) {
+      status[cell1Root] |= CONNECTED_TO_BOTTOM;
+      status[cell2Root] |= CONNECTED_TO_BOTTOM;
+    }
+    pqu.union(cell1, cell2);
+  }
 
   public void open(int i, int j) {
     validateCellIndex(i, j);
     if (isOpen(i, j)) return;
-    status[getCellIndex(i, j)] = true;
+    status[getCellIndex(i, j)] |= OPEN;
 
     connectAbove(i, j);
     connectBelow(i, j);
@@ -85,27 +100,25 @@ public class Percolation {
     connectRight(i, j);
   }
 
+  
+
   public boolean isOpen(int i, int j) {
     validateCellIndex(i, j);
-    return status[getCellIndex(i, j)];
+    return (status[getCellIndex(i, j)] & OPEN) == OPEN;
   }
 
   public boolean isFull(int i, int j) {
     validateCellIndex(i, j);
-    if (i == 1 && isOpen(i, j)) { return true; }
-    return wqu.connected(sizeOfRowCol * sizeOfRowCol, getCellIndex(i, j));
+    return isOpen(i, j) && pqu.connected(sizeOfRowCol * sizeOfRowCol, getCellIndex(i, j));
   }
 
   public boolean percolates() {
-    // check if the 2 virtual sites are connected
-    for (int col = 1; col <= sizeOfRowCol; ++col) {
-      if (isOpen(sizeOfRowCol, col) && isFull(sizeofRowCol, col)) {
-        return true;
-      }
-    return wqu.connected(sizeOfRowCol*sizeOfRowCol, sizeOfRowCol*sizeOfRowCol + 1);
+    int rootOfVirtualSite = pqu.find(sizeOfRowCol * sizeOfRowCol);
+    return (status[rootOfVirtualSite] & CONNECTED_TO_BOTTOM) == CONNECTED_TO_BOTTOM;
   }
 
   public static void main(String[] args) {
+    /*
     Percolation percolation = new Percolation(7);
     percolation.open(1,5);
     StdOut.println(percolation.isFull(1, 1));
@@ -124,6 +137,13 @@ public class Percolation {
     StdOut.println(percolation.isFull(7,1));
     StdOut.println(percolation.isFull(5,3));
     StdOut.println(percolation.percolates());
+    percolation.open(3, 3);
+    percolation.open(2, 3);
+    percolation.open(1, 3);
+    percolation.open(3, 1);
+    StdOut.println(percolation.isFull(3,1));
+    StdOut.println(percolation.percolates());
+    */
   }
 
 }

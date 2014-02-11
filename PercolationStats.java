@@ -6,10 +6,10 @@ public class PercolationStats {
     for (int i = 0; i < tries.length; ++i) {
       int totalOpened = 0;
       Percolation percolation = new Percolation(N);
-      while (! percolation.percolates()) {
+      while (!percolation.percolates()) {
         int row = StdRandom.uniform(1, N+1);
         int col = StdRandom.uniform(1, N+1);
-        if (! percolation.isOpen(row, col)) {
+        if (!percolation.isOpen(row, col)) {
           percolation.open(row, col);
           totalOpened++;
         }
