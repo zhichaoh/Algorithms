@@ -42,32 +42,20 @@ public class Deque<Item> implements Iterable<Item> {
     int p = head;
     int n = items.length;
     int r = n - p;
-    StdOut.printf("p=%d, n=%d, r=%d\n", p, n, r);
-    StdOut.printf("size=%d\n", size());
 
     int newCapacity = n >> 1;
     Object[] temp = new Object[newCapacity];
 
     if (head < tail) {
       System.arraycopy(items, head, temp, 0, size());
-      for (Object i : temp) {
-        StdOut.print(i + " ");
-      }
-      StdOut.println();
     }
     else if (head > tail) {
       int headPartSize = items.length - head;
-      StdOut.printf("headPartSize=%d\n", headPartSize);
-      StdOut.printf("tail=%d\n", tail);
       System.arraycopy(items, head, temp, 0, headPartSize);
       System.arraycopy(items, 0, temp, headPartSize, tail);
-      for (Object i : temp) {
-        StdOut.print(i + " ");
-      }
-      StdOut.println();
     }
+    items = (Item[]) temp;
     tail = size();
-    StdOut.printf("after copy tail=%d\n", tail);
     head = 0;
   }
 
@@ -104,7 +92,6 @@ public class Deque<Item> implements Iterable<Item> {
     Item item = items[t];
     items[t] = null;
     tail = t;
-    StdOut.println("removed item=" + item);
     return item;
   }
 
