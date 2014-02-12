@@ -119,28 +119,26 @@ public class RandomizedQueue<Item> implements Iterable<Item> {
   }
 
   private class RandomizedQueueIterator implements java.util.Iterator<Item> {
-    private int cursor = head;
-    private int fence = tail;
-    private int count = size();
+    private int idx = 0;
+    private int[] rdIdxes = new int[size()];
+
+    public RandomizedQueueIterator() {
+      for (int i = 0; i < rdIdxes.length; ++i) {
+        rdIdxes[i] = i;
+      }
+      StdRandom.shuffle(rdIdxes);
+    }
 
     public boolean hasNext() {
-      return cursor != fence;
+      return idx < rdIdxes.length;
     }
 
     public Item next() {
-      if (cursor == fence) throw new java.util.NoSuchElementException();
+      if (rdIdxes.length == 0 || idx == rdIdxes.length ) throw new java.util.NoSuchElementException();
 
-      int randomIdx = (cursor + StdRandom.uniform(count)) & (items.length - 1);
+      int randomIdx = (cursor + rdIdxes[idx++]) & (items.length - 1);
 
-      Item temp = items[randomIdx];
-      items[randomIdx] = items[cursor];
-      items[cursor] = temp;
-
-      Item result = temp;
-
-      cursor = (cursor + 1) & (items.length - 1);
-      count--;
-      return result;
+      return items[randomIdx];
     }
 
     public void remove() {
