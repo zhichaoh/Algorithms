@@ -1,98 +1,89 @@
 public class Deque<Item> implements Iterable<Item> {
-  private Item[] items;
-  private int count;
-  private int head;
-  private int tail;
-  public Deque() {
-    items = (Item[]) new Object[16];
-    count = 0;
-    head = tail = 0;
+  private class Node<Item> {
+    private Item item;
+    private Node next;
+    private Node prev;
+  };
 
+  private int count = 0;
+  private Node<Item> head = new Node<Item>();
+  private Node<Item> tail = new Node<Item>();
+  public Deque() {
+    head = new Node<Item>();
+    tail = new Node<Item>();
+    head.next = tail;
+    tail.prev = head;
   }
 
   public boolean isEmpty() {
-    return head == tail;
+    return count == 0;  
   }
 
   public int size() {
-    return (tail - head) & (items.length - 1);
+    return count;
   }
 
-  private void doubleCapacity() {
-    assert head == tail;
-    int p = head;
-    int n = items.length;
-    int r = n - p;
-
-    int newCapacity = n << 1;
-    if (newCapacity < 0)
-      throw new IllegalStateException("Deque too big!");
-
-    Object[] temp = new Object[newCapacity];
-    System.arraycopy(items, p, temp, 0, r);
-    System.arraycopy(items, 0, temp, r, p);
-    items = (Item[]) temp;
-
-    head = 0;
-    tail = n;
-  }
-
-  private void shrink() {
-    if (size() >= items.length / 4) return;
-    int p = head;
-    int n = items.length;
-    int r = n - p;
-
-    int newCapacity = n >> 1;
-    Object[] temp = new Object[newCapacity];
-
-    if (head < tail) {
-      System.arraycopy(items, head, temp, 0, size());
-    }
-    else if (head > tail) {
-      int headPartSize = items.length - head;
-      System.arraycopy(items, head, temp, 0, headPartSize);
-      System.arraycopy(items, 0, temp, headPartSize, tail);
-    }
-    items = (Item[]) temp;
-    tail = size();
-    head = 0;
-  }
 
   public void addFirst(Item item) {
     if (item == null) throw new NullPointerException();
-    items[head = (head-1) & (items.length - 1)] = item; 
-    if (head == tail) doubleCapacity();
+    Node<Item> node = new Node<Item>();
+    node.item = item;
+
+    Node oldHead = head.next;
+    node.next = oldHead;
+    head.next = oldHead;
+    if (oldHead.prev != null) {
+      oldHead.prev = node;
+    }
+    head.next = node;
+    node.prev = head;
+    count++;
   }
 
   public void addLast(Item item) {
     if (item == null) throw new NullPointerException();
 
-    items[tail] = item;
-    tail = (tail + 1) & (items.length - 1);
-    if (tail == head) doubleCapacity();
+    Node<Item> node = new Node<Item>();
+    node.item = item;
+
+    Node oldTail = tail.prev;
+    oldTail.next = node;
+    node.prev = oldTail;
+
+    tail.prev = node;
+    node.next = tail;
+    count++;
   }
 
   public Item removeFirst() {
-    if (isEmpty()) throw new java.util.NoSuchElementException();
+    if (count == 0) throw new java.util.NoSuchElementException();
 
-    shrink();
-    int h = head;
-    Item item = items[h];
-    items[h] = null;
-    head = (h+1) & (items.length + 1);
-    return item;
+    Node<Item> first = head.next;
+    head.next = first.next;
+    first.next.prev = head;
+    count--;
+
+    Item result = first.item;
+    // make sure first's prev and next reference are free'd
+    first.next = null;
+    first.prev = null;
+    first = null;
+    return result;
   }
 
   public Item removeLast() {
     if (isEmpty()) throw new java.util.NoSuchElementException();
 
-    shrink();
-    int t = (tail-1) & (items.length - 1);
-    Item item = items[t];
-    items[t] = null;
-    tail = t;
-    return item;
+    Node<Item> last = tail.prev;
+    tail.prev = last.prev;
+    last.prev.next = tail;
+    count--;
+    Item result = last.item;
+    // make sure last's prev and next reference are free'd
+    last.next = null;
+    last.prev = null;
+    last = null;
+    return result;
   }
 
   public java.util.Iterator<Item> iterator() {
@@ -100,19 +91,17 @@ public class Deque<Item> implements Iterable<Item> {
   }
 
   private class DequeIterator implements java.util.Iterator<Item> {
-    private int cursor = head;
-    private int fence = tail;
+    private Node<Item> cursor = head.next;
 
     public boolean hasNext() {
-      return cursor != fence;
+      return (count != 0) && (cursor != tail);
     }
 
     public Item next() {
-      if (cursor == fence) throw new java.util.NoSuchElementException();
+      if (count == 0 || cursor == tail) throw new java.util.NoSuchElementException();
 
-      Item result = items[cursor];
-
-      cursor = (cursor + 1) & (items.length-1);
+      Item result = cursor.item;
+      cursor = cursor.next;
       return result;
     }
 
@@ -137,6 +126,14 @@ public class Deque<Item> implements Iterable<Item> {
     }
 
     StdOut.println("=====after removal====");
+    for (Integer i : items) {
+      StdOut.printf("%d ", i);
+    }
+    StdOut.println();
+
+    for (int i = 0; i < 5; ++i) {
+      items.removeFirst();
+    }
     for (Integer i : items) {
       StdOut.printf("%d ", i);
     }
